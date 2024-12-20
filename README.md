@@ -103,7 +103,7 @@ After fine-tuning, use your model for downstream tasks with the Transformers lib
 ```python
 from transformers import AutoModelForMaskedLM, AutoTokenizer
 
-model_name = "your_username/modernbert-base-dutch"  # Replace with your model name
+model_name = "your_username/modernbert-base-language"  # Replace with your model name
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForMaskedLM.from_pretrained(model_name)
 
