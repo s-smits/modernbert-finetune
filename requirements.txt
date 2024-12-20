@@ -1,0 +1,5 @@
+torch
+datasets
+huggingface-hub
+wandb
+git+https://github.com/huggingface/transformers.git
