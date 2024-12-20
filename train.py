@@ -15,19 +15,12 @@ from huggingface_hub import whoami, Repository
 from tqdm.auto import tqdm
 import wandb
 
-# Disable Torch Dynamo to avoid backend/triton issues on older GPUs
-import torch._dynamo
-torch._dynamo.config.suppress_errors = True
-
 # Configuration
 model_checkpoint = "answerdotai/ModernBERT-base"
 dataset_name = "ssmits/fineweb-2-dutch"
-username = "ssmits"
+username = "username" # Add your Huggingface username here
 huggingface_token = os.environ["HUGGINGFACE_TOKEN"]
 wandb_token = os.environ["WANDB_API_KEY"]
-
-os.environ["TORCH_LOGS"] = ""
-os.environ["TORCHDYNAMO_VERBOSE"] = "0"
 
 # Dataset size (in rows)
 estimated_dataset_size_in_rows = 86_500_000
@@ -122,9 +115,6 @@ optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
 scheduler = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=0, num_training_steps=total_train_steps
 )
-
-# Disable Torch Dynamo on model forward
-model.forward = torch._dynamo.disable(model.forward)
 
 # AMP scaler for mixed precision
 scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
