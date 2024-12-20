@@ -111,7 +111,7 @@ print(f"Using device: {device}")
 model.to(device)
 
 # Optimizer and Scheduler
-optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=0.01)
+optimizer = AdamW(model.parameters(), lr=2e-5, weight_decay=0.01)
 scheduler = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=0, num_training_steps=total_train_steps
 )
