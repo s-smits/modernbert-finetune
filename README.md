@@ -63,7 +63,7 @@ This repository provides a script and instructions for fine-tuning the [ModernBE
     | `eval_size_ratio`               | 0.05                          | The proportion of the dataset to use for evaluation.                                                                                       |
     | `masking_probabilities`         | \[0.3, 0.2, 0.18, 0.16, 0.14] | The curriculum learning masking probabilities.                                                                                             |
     | `estimated_dataset_size_in_rows` | 86500000                     | The estimated number of rows in your dataset.                                                                                            |
-    | `username` | ssmits | Your huggingface username                                                                                         |
+    | `username` | username | Your huggingface username                                                                                         |
     | `total_save_limit` | 2 | Max number of saved models|
     | `repo_name` | modernbert-dutch | Repo name to save to |
     | `eval_size_per_chunk` | 50000 | Eval size for every chunk in curriculum learning |
