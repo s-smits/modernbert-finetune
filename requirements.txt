@@ -3,3 +3,4 @@ datasets
 huggingface-hub
 wandb
 git+https://github.com/huggingface/transformers.git
+flash-attn --no-build-isolation
