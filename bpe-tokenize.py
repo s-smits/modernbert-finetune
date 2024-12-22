@@ -9,7 +9,7 @@ from transformers import AutoTokenizer
 # --- Configuration ---
 DATASET_NAME = "ssmits/fineweb-2-dutch"  # Dataset for tokenizer training
 TOKENIZER_SAVE_PATH = "domain_tokenizer"  # Directory to save the trained tokenizer
-VOCAB_SIZE = 30000  # Desired vocabulary size
+VOCAB_SIZE = 32768  # Desired vocabulary size
 NUM_EXAMPLES_TO_TRAIN = 10000  # Number of examples to use from the streaming dataset
 BATCH_SIZE = 1000
 
