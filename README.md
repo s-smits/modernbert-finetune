@@ -1,11 +1,15 @@
 # Fine-tuning ModernBERT on a Dutch Dataset with Custom Tokenizer Training
 
+**⚠️ Work in Progress - Contributions Welcome! ⚠️**
+
 This repository provides scripts and instructions for:
 
 1. **Training a WordPiece tokenizer** on a Dutch dataset (or any other dataset from the Hugging Face Hub).
 2. **Fine-tuning the ModernBERT-base model** on the same Dutch dataset, optionally using the custom-trained tokenizer.
 
 It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries for efficient training.
+
+**We are actively developing this project and welcome contributions from the community! If you're interested in helping out, please feel free to open issues, submit pull requests, or reach out to us directly.**
 
 ## Features
 
@@ -19,7 +23,8 @@ It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries f
     *   Supports dynamic batching with a custom `DataCollator`.
     *   Implements curriculum learning by gradually decreasing the MLM masking probability.
     *   Uses gradient accumulation to simulate larger batch sizes.
-    *   Optionally integrates FlashAttention for faster training (if available).
+    *   **Uses the ADOPT optimizer for improved convergence.**
+    *   **Optionally integrates FlashAttention 2 for faster training (requires a compatible GPU - see details below).**
     *   Includes evaluation steps during training.
     *   Automatically pushes intermediate and final models to the Hugging Face Hub.
 *   **Weights & Biases (WandB) Integration (Optional):** Tracks and visualizes training runs in real-time.
@@ -31,6 +36,7 @@ It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries f
 *   **WandB Account (Optional):** Create a free account at [wandb.ai](https://wandb.ai/).
 *   **WandB API Key (Optional):** Get your API key from your [WandB settings](https://wandb.ai/settings).
 *   **Environment:** A GPU environment is strongly recommended for model fine-tuning. Tokenizer training can be done on a CPU.
+*   **GPU Compatibility for FlashAttention 2:** FlashAttention 2 requires a GPU with compute capability >= 7.0. This means **Turing (e.g., T4, RTX 20xx), Ampere (e.g., A100, RTX 30xx), Ada Lovelace (e.g., RTX 40xx), or newer architectures.**
 
 ## Installation
 
@@ -193,6 +199,7 @@ outputs = model(**inputs)
 *   **CUDA Errors:** If you get CUDA errors, reduce `per_device_train_batch_size`, or increase `gradient_accumulation_steps`.
 *   **Shape Errors:** The `fix_batch_inputs` function and `DynamicPaddingDataCollator` handle most shape issues. If you encounter any, ensure your dataset is properly formatted and you're using the latest `transformers` version.
 *   **Tokenizer Issues:** If you have problems loading or using your custom tokenizer, make sure it was saved correctly using `save_pretrained` and that `TOKENIZER_SAVE_PATH` is accurate.
+*   **FlashAttention 2 Issues**: Ensure your GPU is compatible (compute capability >= 7.0). If you encounter errors specific to FlashAttention, try disabling it by setting the environment variable `USE_FLASH_ATTENTION` to `False`.
 
 ## License
 
@@ -205,14 +212,3 @@ This project is licensed under the [MIT License](LICENSE).
 *   [Hugging Face Tokenizers](https://huggingface.co/docs/tokenizers/index)
 *   [Hugging Face Datasets](https://huggingface.co/docs/datasets/index)
 *   [Weights & Biases](https://wandb.ai/)
-```
-
-**Key Improvements:**
-
-*   **Combined Instructions:** The README now seamlessly integrates instructions for both tokenizer training and model fine-tuning.
-*   **Mode Selection:** Clearly explains the `TOKENIZE_ONLY` and `TRAIN_MODEL` flags for controlling the script's behavior.
-*   **Parameter Tables:** Organizes parameters into logical groups (tokenizer training, model fine-tuning, mode selection) with clear descriptions.
-*   **Streamlined Workflow:** Presents a clear, step-by-step workflow for both tokenizer training and model fine-tuning.
-*   **Tips and Troubleshooting:** Provides more comprehensive tips and troubleshooting advice.
-
-This comprehensive README should make it easy for users to understand and utilize your project for both tokenizer training and model fine-tuning. Remember to update the repository link (`https://github.com/s-smits/modernbert-finetune.git`) if necessary!
