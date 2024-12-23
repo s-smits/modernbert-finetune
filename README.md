@@ -174,8 +174,8 @@ outputs = model(**inputs)
 
 ## Tips and Considerations
 
-*   **GPU Memory:** ModernBERT is large. Adjust `per_device_train_batch_size`, and `gradient_accumulation_steps` to fit your GPU.
-*   **Dataset Size:** The script is designed for large, streaming datasets. Adjust `estimated_dataset_size_in_rows` for smaller datasets.
+*   **GPU Memory:** ModernBERT is relatively small. Adjust `per_device_train_batch_size`, and `gradient_accumulation_steps` to fully utilize your GPU.
+*   **Dataset Size:** The script is designed for large, streaming datasets. Adjust `estimated_dataset_size_in_rows` to your dataset size.
 *   **Hyperparameter Tuning:** Experiment with different hyperparameters (learning rate, masking probabilities, etc.) to find optimal settings.
 *   **Tokenizer Training:** If training a new tokenizer, consider the `VOCAB_SIZE` and `NUM_EXAMPLES_TO_TRAIN` carefully.
 *   **Evaluation:** Customize the evaluation frequency using `eval_interval` in the script.
