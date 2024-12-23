@@ -32,7 +32,7 @@ model_checkpoint = "answerdotai/ModernBERT-base"
 dataset_name = "ssmits/fineweb-2-dutch"
 username = "ssmits"
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
-wandb_token = os.environ.get("WANDB_API_KEY", None) # Optional
+wandb_api_key = os.environ.get("WANDB_API_KEY", None) # Optional
 tokenizer_path = "domain_tokenizer" # Path to custom tokenizer directory
 
 # --- Dataset size (in rows) ---
@@ -64,11 +64,11 @@ else:
 
 # --- Tokens ---
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
-wandb_token = os.environ.get("WANDB_API_KEY", None)
+wandb_api_key = os.environ.get("WANDB_API_KEY", None)
 
 # --- Initialize WandB ---
-if wandb_token is not None:
-    wandb.login(key=wandb_token)
+if wandb_api_key is not None:
+    wandb.login(key=wandb_api_key)
 else:
     wandb.login()
 
