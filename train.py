@@ -33,6 +33,7 @@ dataset_name = "ssmits/fineweb-2-dutch"
 username = "ssmits"
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
 wandb_token = os.environ.get("WANDB_API_KEY", None) # Optional
+tokenizer_path = "domain_tokenizer" # Path to custom tokenizer directory
 
 # --- Dataset size (in rows) ---
 estimated_dataset_size_in_rows = 86_500_000
@@ -54,8 +55,12 @@ total_train_steps = total_steps_per_epoch * num_train_epochs
 eval_size_per_chunk = int(100_000 * eval_size_ratio)
 
 # --- Testing Mode ---
-TESTING = os.environ.get("TESTING", "False").lower() == "true"
-push_interval = 10_000 if TESTING else 100_000
+TESTING = False  # Set to True for testing, False for full training
+
+if TESTING:
+    push_interval = 10_000
+else:
+    push_interval = 100_000
 
 # --- Tokens ---
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
@@ -74,9 +79,16 @@ wandb.init(
 
 # --- Load Tokenizer and Model ---
 print(f"Loading model and tokenizer from {model_checkpoint}...")
-tokenizer = AutoTokenizer.from_pretrained(
-    model_checkpoint, use_auth_token=huggingface_token
-)
+
+# Check if custom tokenizer exists, otherwise use default
+if os.path.exists(tokenizer_path) and os.path.isfile(os.path.join(tokenizer_path, "tokenizer.json")):
+    print(f"Loading custom tokenizer from {tokenizer_path}...")
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+else:
+    print(f"Using default tokenizer from {model_checkpoint}...")
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_checkpoint, use_auth_token=huggingface_token
+    )
 
 print(f"Loading model config from {model_checkpoint}...")
 config = AutoConfig.from_pretrained(
