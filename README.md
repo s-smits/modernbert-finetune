@@ -7,19 +7,19 @@ This repository provides scripts and instructions for:
 1. **Training a WordPiece tokenizer** on a Dutch dataset (or any other dataset from the Hugging Face Hub).
 2. **Fine-tuning the ModernBERT-base model** on the same Dutch dataset, optionally using the custom-trained tokenizer.
 
-It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries for efficient training.
+It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries for efficient training. **Note that this code currently only supports single-GPU training. Multi-GPU support may be added in the future.**
 
-**We are actively developing this project and welcome contributions from the community! If you're interested in helping out, please feel free to open issues, submit pull requests, or reach out to us directly.**
+**Actively in development and welcoming contributions from the community! If you're interested in helping out, please feel free to open issues, submit pull requests, or reach out directly.**
 
 ## Features
 
-*   **Custom Tokenizer Training:**
+*   **Custom Tokenizer Training (Optional):**
     *   Trains a WordPiece tokenizer using the `tokenizers` library.
     *   Supports streaming datasets for efficient handling of large corpora.
     *   Configurable vocabulary size and training examples.
 *   **Model Fine-tuning:**
     *   Fine-tunes the `answerdotai/ModernBERT-base` model (or another specified checkpoint).
-    *   Uses `Trainer` from `transformers` for streamlined training.
+    *   Uses components from `transformers` for streamlined training.
     *   Supports dynamic batching with a custom `DataCollator`.
     *   Implements curriculum learning by gradually decreasing the MLM masking probability.
     *   Uses gradient accumulation to simulate larger batch sizes.
@@ -35,7 +35,7 @@ It leverages the Hugging Face Transformers, Tokenizers, and Datasets libraries f
 *   **Hugging Face API Token:** Generate a User Access Token (with "write" access) from your [Hugging Face profile settings](https://huggingface.co/settings/tokens).
 *   **WandB Account (Optional):** Create a free account at [wandb.ai](https://wandb.ai/).
 *   **WandB API Key (Optional):** Get your API key from your [WandB settings](https://wandb.ai/settings).
-*   **Environment:** A GPU environment is strongly recommended for model fine-tuning. Tokenizer training can be done on a CPU.
+*   **Environment:** A GPU environment is strongly recommended for model fine-tuning. Tokenizer training can be done on a CPU. **Currently, only single-GPU training is supported.**
 *   **GPU Compatibility for FlashAttention 2:** FlashAttention 2 requires a GPU with compute capability >= 7.0. This means **Turing (e.g., T4, RTX 20xx), Ampere (e.g., A100, RTX 30xx), Ada Lovelace (e.g., RTX 40xx), or newer architectures.**
 
 ## Installation
@@ -68,18 +68,18 @@ Replace `"your_huggingface_token"` with your actual Hugging Face token and `"you
 
 ### Script Parameters
 
-The `train.py` script defines several configurable parameters. You can modify these directly in the file or override them using environment variables.
+The `train.py` script defines several configurable parameters for model fine-tuning. Tokenizer training parameters are in `train_tokenizer.py`. You can modify these directly in the files or override them using environment variables.
 
-**Tokenizer Training Parameters:**
+**Tokenizer Training Parameters (`train_tokenizer.py`):**
 
-| Parameter               | Default Value          | Description                                                                   |
-| :---------------------- | :--------------------- | :---------------------------------------------------------------------------- |
-| `DATASET_NAME`          | "ssmits/fineweb-2-dutch" | The name of the dataset on the Hugging Face Hub to use for training.       |
-| `TOKENIZER_SAVE_PATH`   | "domain_tokenizer_bpe" | The directory to save the trained tokenizer.                             |
-| `VOCAB_SIZE`            | 30000                  | The desired vocabulary size.                                              |
-| `TOKENIZER_TRAIN_SAMPLE_SIZE` | 10000                  | The number of examples from the dataset to use for training the tokenizer.             |
+| Parameter                 | Default Value          | Description                                                                   |
+| :------------------------ | :--------------------- | :---------------------------------------------------------------------------- |
+| `DATASET_NAME`            | "ssmits/fineweb-2-dutch" | The name of the dataset on the Hugging Face Hub to use for training.       |
+| `TOKENIZER_SAVE_PATH`     | "domain_tokenizer"     | The directory to save the trained tokenizer.                             |
+| `VOCAB_SIZE`              | 32768                  | The desired vocabulary size.                                              |
+| `NUM_EXAMPLES_TO_TRAIN` | 10000                  | The number of examples from the dataset to use for training the tokenizer.             |
 
-**Model Fine-tuning Parameters:**
+**Model Fine-tuning Parameters (`train.py`):**
 
 | Parameter                       | Default Value                 | Description                                                                                                                                |
 | :------------------------------ | :---------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
@@ -87,27 +87,17 @@ The `train.py` script defines several configurable parameters. You can modify th
 | `dataset_name`                  | "ssmits/fineweb-2-dutch"      | The name of the dataset on the Hugging Face Hub to use for fine-tuning.                                                                   |
 | `num_train_epochs`              | 1                             | The number of training epochs.                                                                                                             |
 | `per_device_train_batch_size`    | 4                             | The batch size per GPU. Adjust based on your GPU memory.                                                                                    |
-| `gradient_accumulation_steps`   | 2                            | The number of steps to accumulate gradients over before performing an optimizer step. Modify based on desired effective batch size and GPU memory. |
+| `gradient_accumulation_steps`   | 2                             | The number of steps to accumulate gradients over before performing an optimizer step. Modify based on desired effective batch size and GPU memory |
 | `eval_size_ratio`               | 0.05                          | The proportion of the dataset to use for evaluation.                                                                                       |
 | `masking_probabilities`         | \[0.3, 0.2, 0.18, 0.16, 0.14] | The curriculum learning masking probabilities.                                                                                             |
 | `estimated_dataset_size_in_rows` | 86500000                     | The estimated number of rows in your dataset.                                                                                            |
 | `username`                      | "ssmits"                      | Your Hugging Face username.                                                                                                                |
 | `total_save_limit`              | 2                             | The maximum number of saved model checkpoints to keep.                                                                                    |
-| `output_dir`                    | "modernbert-dutch-model"                | The directory to save the fine-tuned model.                                                                                |
-| `repo_name`                     | "your_username/modernbert-dutch"   | The name of the repository on the Hugging Face Hub to push the model to (replace `your_username`).                                      |
 | `push_interval`                 | 100000                         | How often to push the model to the Hugging Face Hub (in steps).                                                                          |
 | `eval_size_per_chunk`           | 5000                          | The size of the evaluation set to use for each chunk in curriculum learning.                                                              |
 | `learning_rate`                 | 5e-4                          | The learning rate for the optimizer.                                                                                                      |
 | `weight_decay`                  | 0.01                          | The weight decay for the optimizer.                                                                                                       |
-
-**Mode Selection Parameters:**
-
-| Parameter        | Value    | Description                                                                                                                               |
-| :--------------- | :------- | :---------------------------------------------------------------------------------------------------------------------------------------- |
-| `TOKENIZE_ONLY`  | `True`   | Train the tokenizer only and exit.                                                                                                       |
-|                  | `False`  | Proceed to model training after (or instead of) tokenizer training.                                                                        |
-| `TRAIN_MODEL`   | `True`   | Train the model. If `TOKENIZE_ONLY` is `False`, a custom tokenizer will be loaded if available, otherwise, the default model tokenizer is used. |
-|                  | `False`  | Do not train the model. Useful if you only want to train the tokenizer.                                                                      |
+| `tokenizer_path`                | "domain_tokenizer"         | Path to custom tokenizer directory. If it exists and contains `tokenizer.json`, the custom tokenizer will be used. Otherwise, the default tokenizer from `model_checkpoint` is loaded.          |
 
 ## Running the Scripts
 
@@ -116,24 +106,21 @@ The `train.py` script defines several configurable parameters. You can modify th
 If you want to train a new tokenizer:
 
 1. **Configure Parameters:**
-    *   Set `TOKENIZE_ONLY = True` in `train.py`.
-    *   Adjust tokenizer training parameters (e.g., `VOCAB_SIZE`, `TOKENIZER_TRAIN_SAMPLE_SIZE`) in `train.py` as needed.
+    *   Adjust tokenizer training parameters (e.g., `VOCAB_SIZE`, `NUM_EXAMPLES_TO_TRAIN`) in `train_tokenizer.py` as needed.
 
 2. **Run the Script:**
 
     ```bash
-    python train.py
+    python train_tokenizer.py
     ```
 
-This will train a tokenizer and save it to the `domain_tokenizer_bpe` directory (or the path you specified).
+This will train a tokenizer and save it to the `domain_tokenizer` directory (or the path you specified).
 
 ### 2. Model Fine-tuning
 
 1. **Configure Parameters:**
-    *   Set `TOKENIZE_ONLY = False` in `train.py`.
-    *   Set `TRAIN_MODEL = True` in `train.py`.
     *   Adjust model fine-tuning parameters (e.g., `num_train_epochs`, `per_device_train_batch_size`, `gradient_accumulation_steps`, `repo_name`) in `train.py` as needed.
-    *   If you trained a custom tokenizer, make sure `TOKENIZER_SAVE_PATH` points to the correct directory. Otherwise, the script will use the default tokenizer from `model_checkpoint`.
+    *   If you trained a custom tokenizer, make sure `tokenizer_path` points to the correct directory. Otherwise, the script will use the default tokenizer from `model_checkpoint`.
 
 2. **Login to Hugging Face Hub:**
 
@@ -166,7 +153,7 @@ This will:
 ## Monitoring and Evaluation
 
 *   **WandB Dashboard:** If you're using WandB, monitor training progress in real-time on your WandB project dashboard.
-*   **Hugging Face Hub:** Your fine-tuned model will be automatically pushed to your Hugging Face Hub profile under the repository name specified in `repo_name`.
+*   **Hugging Face Hub:** Your fine-tuned model will be automatically pushed to your Hugging Face Hub profile under the repository name specified in `repo_name` of train.py.
 
 ## Using Your Fine-tuned Model
 
@@ -198,7 +185,7 @@ outputs = model(**inputs)
 
 *   **CUDA Errors:** If you get CUDA errors, reduce `per_device_train_batch_size`, or increase `gradient_accumulation_steps`.
 *   **Shape Errors:** The `fix_batch_inputs` function and `DynamicPaddingDataCollator` handle most shape issues. If you encounter any, ensure your dataset is properly formatted and you're using the latest `transformers` version.
-*   **Tokenizer Issues:** If you have problems loading or using your custom tokenizer, make sure it was saved correctly using `save_pretrained` and that `TOKENIZER_SAVE_PATH` is accurate.
+*   **Tokenizer Issues:** If you have problems loading or using your custom tokenizer, make sure it was saved correctly using `tokenizer.save` in `train_tokenizer.py` and that `TOKENIZER_SAVE_PATH` is accurate.
 *   **FlashAttention 2 Issues**: Ensure your GPU is compatible (compute capability >= 7.0). If you encounter errors specific to FlashAttention, try disabling it by setting the environment variable `USE_FLASH_ATTENTION` to `False`.
 
 ## License
