@@ -1,3 +1,5 @@
+# -------- spm-tokenize.py PREFERRED OVER bpe-tokenize.py -------
+
 from tokenizers import Tokenizer
 from tokenizers.models import WordPiece
 from tokenizers.pre_tokenizers import Whitespace
