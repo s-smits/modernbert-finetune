@@ -17,23 +17,13 @@ import wandb
 from adopt import ADOPT
 from typing import List, Dict, Any
 
-# Flash-attn Implementation Check
-try:
-    from flash_attn.flash_attention import FlashAttention
-
-    print("FlashAttention is available.")
-    flash_attn_available = True
-except ImportError:
-    print("FlashAttention is not available. Using standard attention.")
-    flash_attn_available = False
-
 # --- Configuration ---
 model_checkpoint = "answerdotai/ModernBERT-base"
 dataset_name = "ssmits/fineweb-2-dutch"
 username = "ssmits"
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
-wandb_api_key = os.environ.get("WANDB_API_KEY", None) # Optional
-tokenizer_path = "domain_tokenizer" # Path to custom tokenizer directory
+wandb_api_key = os.environ.get("WANDB_API_KEY", None)  # Optional
+tokenizer_path = "domain_tokenizer"  # Path to custom tokenizer directory
 
 # --- Dataset size (in rows) ---
 estimated_dataset_size_in_rows = 86_500_000
@@ -41,7 +31,7 @@ estimated_dataset_size_in_rows = 86_500_000
 # --- Training Config ---
 num_train_epochs = 1
 # Reduce or remove chunk size to allow for dynamic batching
-chunk_size = None  # 512  # Remove chunk size
+chunk_size = None  # Remove chunk size
 per_device_train_batch_size = 4
 gradient_accumulation_steps = 2
 eval_size_ratio = 0.05
@@ -56,11 +46,37 @@ eval_size_per_chunk = int(100_000 * eval_size_ratio)
 
 # --- Testing Mode ---
 TESTING = False  # Set to True for testing, False for full training
+FLASH_ATTENTION = True
 
 if TESTING:
     push_interval = 10_000
 else:
     push_interval = 100_000
+
+# --- Check for FlashAttention Installation ---
+if FLASH_ATTENTION:
+    try:
+        import flash_attn
+        print("FlashAttention is already installed.")
+    except ImportError:
+        print("FlashAttention is not installed. Installing...")
+        try:
+            import subprocess
+            subprocess.run(["pip", "install", "flash-attn", "--no-build-isolation"], check=True)
+            import flash_attn
+            print("FlashAttention installed successfully.")
+        except Exception as e:
+            print(f"Error installing FlashAttention: {e}")
+            exit()
+
+# --- Flash-attn Integration Check ---
+try:
+    from flash_attn.flash_attention import FlashAttention
+    print("FlashAttention is available.")
+    flash_attn_available = True
+except ImportError:
+    print("FlashAttention is not available. Using standard attention.")
+    flash_attn_available = False
 
 # --- Tokens ---
 huggingface_token = os.environ.get("HUGGINGFACE_TOKEN", None)
@@ -81,7 +97,15 @@ wandb.init(
 print(f"Loading model and tokenizer from {model_checkpoint}...")
 
 # Check if custom tokenizer exists, otherwise use default
-if os.path.exists(tokenizer_path) and os.path.isfile(os.path.join(tokenizer_path, "tokenizer.json")):
+if os.path.exists(tokenizer_path) and any(fname.startswith('spm') for fname in os.listdir(tokenizer_path)):
+    print(f"Loading custom SentencePiece tokenizer from {tokenizer_path}...")
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+    # Add the pad_token if it's not already in the tokenizer
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        model.resize_token_embeddings(len(tokenizer))
+elif os.path.exists(tokenizer_path) and os.path.isfile(os.path.join(tokenizer_path, "tokenizer.json")):
     print(f"Loading custom tokenizer from {tokenizer_path}...")
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
 else:
@@ -124,10 +148,7 @@ print("Dataset loaded.")
 def tokenize_function(examples):
     return tokenizer(
         examples["text"],
-        # Removed truncation and max_length to allow dynamic padding
-        # truncation=True,
-        # max_length=chunk_size,
-        # padding="longest",
+        # No truncation and max_length to allow dynamic padding truncation=True, max_length=chunk_size, padding="longest",
         return_special_tokens_mask=True,
     )
 
@@ -337,7 +358,7 @@ def train_with_curriculum(mlm_probabilities, chunk_size_dataset):
                         print(f"Evaluation loss at step {global_step}: {eval_loss}")
                         wandb.log({"eval_loss": eval_loss}, step=global_step)
 
-                    # Push to hub logic (Modified for TESTING mode)
+                    # Push to hub incl TESTING
                     if global_step % push_interval == 0:
                         print(f"Saving and pushing model at step {global_step}...")
                         model.save_pretrained(output_dir)
@@ -361,7 +382,7 @@ def train_with_curriculum(mlm_probabilities, chunk_size_dataset):
 masking_probabilities = [0.3, 0.2, 0.18, 0.16, 0.14]
 chunk_size_dataset = estimated_dataset_size_in_rows // len(
     masking_probabilities
-)  # Still used to divide the dataset
+)
 
 # --- Start Training ---
 try:
