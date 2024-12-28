@@ -68,9 +68,9 @@ Replace `"your_huggingface_token"` with your actual Hugging Face token and `"you
 
 ### Script Parameters
 
-The `train.py` script defines several configurable parameters for model fine-tuning. Tokenizer training parameters are in `train_tokenizer.py`. You can modify these directly in the files or override them using environment variables.
+The `train.py` script defines several configurable parameters for model fine-tuning. Tokenizer training parameters are in `tokenize.py`. You can modify these directly in the files or override them using environment variables.
 
-**Tokenizer Training Parameters (`train_tokenizer.py`):**
+**Tokenizer Training Parameters (`spm-tokenize.py`):**
 
 | Parameter                 | Default Value          | Description                                                                   |
 | :------------------------ | :--------------------- | :---------------------------------------------------------------------------- |
@@ -106,12 +106,12 @@ The `train.py` script defines several configurable parameters for model fine-tun
 If you want to train a new tokenizer:
 
 1. **Configure Parameters:**
-    *   Adjust tokenizer training parameters (e.g., `VOCAB_SIZE`, `NUM_EXAMPLES_TO_TRAIN`) in `train_tokenizer.py` as needed.
+    *   Adjust tokenizer training parameters (e.g., `VOCAB_SIZE`, `NUM_EXAMPLES_TO_TRAIN`) in `tokenize.py` as needed.
 
 2. **Run the Script:**
 
     ```bash
-    python train_tokenizer.py
+    python tokenize.py
     ```
 
 This will train a tokenizer and save it to the `domain_tokenizer` directory (or the path you specified).
