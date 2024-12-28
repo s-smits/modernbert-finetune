@@ -2,4 +2,5 @@ torch-adopt
 datasets
 huggingface-hub
 wandb
+sentencepiece
 git+https://github.com/huggingface/transformers.git
