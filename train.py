@@ -196,7 +196,7 @@ scheduler = get_linear_schedule_with_warmup(
 )
 
 # --- AMP scaler for mixed precision ---
-scaler = torch.cuda.amp.GradScaler(enabled=(device.type == "cuda"))
+scaler = torch.amp.GradScaler('cuda', enabled=(device.type == "cuda"))
 
 # --- Helper Function to Fix Batch Inputs ---
 def fix_batch_inputs(inputs: dict) -> dict:
@@ -225,7 +225,7 @@ def forward_pass(model, inputs):
     """
     inputs = fix_batch_inputs(inputs)
     inputs = {k: v.to(device) for k, v in inputs.items()}
-    with torch.cuda.amp.autocast(enabled=(device.type == "cuda")):
+    with torch.amp.autocast('cuda', enabled=(device.type == "cuda")):
         outputs = model(**inputs, return_dict=True)
     if outputs.loss is None:
         raise ValueError("Model did not return a loss.")
@@ -241,10 +241,10 @@ def evaluate(model, eval_dataset, data_collator):
     losses = []
     eval_iterator = eval_dataset.iter(batch_size=per_device_train_batch_size)
     for batch in tqdm(eval_iterator, desc="Evaluating"):
-        with torch.no_grad(), torch.cuda.amp.autocast(
+        with torch.no_grad(), torch.amp.autocast('cuda',
             enabled=(device.type == "cuda")
         ):
-            inputs = data_collator([batch])
+            inputs = data_collator(batch)
             try:
                 loss = forward_pass(model, inputs)
                 losses.append(loss.item())
@@ -263,33 +263,27 @@ class DynamicPaddingDataCollator(DataCollatorForLanguageModeling):
     but the overall length can vary between batches.
     """
 
-    def __call__(self, examples: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
+    def __call__(self, examples: Dict[str, Any]) -> Dict[str, torch.Tensor]:
         # Find the maximum length within the current batch
-        max_length = max(len(example["input_ids"]) for example in examples)
+        max_length = max(len(input_ids) for input_ids in examples['input_ids'])
 
         # Pad or truncate each example to the max_length
         batch = []
-        for example in examples:
-            input_ids = example["input_ids"]
-            attention_mask = example["attention_mask"]
+        input_ids = examples["input_ids"]
+        attention_mask = examples["attention_mask"]
 
-            padding_length = max_length - len(input_ids)
+        for ids, mask in zip(input_ids, attention_mask):
+            padding_length = max_length - len(ids)
             if padding_length > 0:
                 # Pad
-                input_ids = input_ids + [self.tokenizer.pad_token_id] * padding_length
-                attention_mask = attention_mask + [0] * padding_length
-            elif padding_length < 0:
+                ids = torch.tensor(ids + [self.tokenizer.pad_token_id] * padding_length)
+                mask = torch.tensor(mask + [0] * padding_length)
+            elif padding_length <= 0:
                 # Truncate (if enabled in your tokenizer)
-                input_ids = input_ids[:max_length]
-                attention_mask = attention_mask[:max_length]
+                ids = torch.tensor(ids[:max_length])
+                mask = torch.tensor(mask[:max_length])
 
-            batch.append({"input_ids": input_ids, "attention_mask": attention_mask})
-
-        # Convert to PyTorch tensors
-        batch = {
-            "input_ids": torch.tensor([item["input_ids"] for item in batch]),
-            "attention_mask": torch.tensor([item["attention_mask"] for item in batch]),
-        }
+            batch.append({"input_ids": ids, "attention_mask": mask})
 
         # Apply the rest of the data collation logic (MLM masking, etc.)
         batch = self.torch_call(batch)  # Use torch_call instead of __call__ to call the parent's method
@@ -333,7 +327,7 @@ def train_with_curriculum(mlm_probabilities, chunk_size_dataset):
                 tqdm(train_iterator, desc=f"Training (MLM {mlm_probability})")
             ):
                 try:
-                    inputs = data_collator([batch])
+                    inputs = data_collator(batch)
                     loss = forward_pass(model, inputs)
                 except Exception as e:
                     print(f"Training batch failed: {e}. Skipping.")
