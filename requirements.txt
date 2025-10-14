@@ -1,6 +1,12 @@
+torch>=2.0.0
 torch-adopt
 datasets
 huggingface-hub
 wandb
 sentencepiece
-git+https://github.com/huggingface/transformers.git
+transformers>=4.36.0
+tqdm
+typing-extensions
+
+# FlashAttention (optional, requires separate installation):
+# uv add flash-attn --no-build-isolation

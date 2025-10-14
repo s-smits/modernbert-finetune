@@ -1,0 +1,29 @@
+[project]
+name = "modernbert-finetune"
+version = "0.1.0"
+description = "Fine-tuning ModernBERT on Dutch datasets with custom tokenizer training"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch-adopt",
+    "datasets",
+    "huggingface-hub",
+    "wandb",
+    "sentencepiece",
+    "transformers>=4.36.0",
+    "torch>=2.0.0",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+flash = [
+    "flash-attn>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = []
+
