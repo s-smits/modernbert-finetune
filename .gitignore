@@ -216,3 +216,4 @@ __marimo__/
 .streamlit/secrets.toml
 .cursor
 uv.lock
+domain_tokenizer/
