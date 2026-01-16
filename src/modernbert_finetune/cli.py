@@ -32,6 +32,10 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Override the push interval in training steps",
     )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--muon", action="store_true", help="Use Muon optimizer")
+    group.add_argument("--adamw", action="store_true", help="Use AdamW optimizer")
+    group.add_argument("--adopt", action="store_true", help="Use ADOPT optimizer")
     return parser.parse_args()
 
 
@@ -41,6 +45,12 @@ def build_config(args: argparse.Namespace) -> ScriptConfig:
         config.flash_attention = False
     if args.push_interval is not None:
         config.push_interval = args.push_interval
+    if args.muon:
+        config.optimizer = "muon"
+    elif args.adamw:
+        config.optimizer = "adamw"
+    elif args.adopt:
+        config.optimizer = "adopt"
     return config
 
 

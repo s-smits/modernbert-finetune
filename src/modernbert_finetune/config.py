@@ -28,6 +28,7 @@ class ScriptConfig:
     push_interval: int = 100_000
     learning_rate: float = 5e-4
     weight_decay: float = 0.01
+    optimizer: str = "adopt"
 
     @property
     def effective_batch_size(self) -> int:

@@ -16,6 +16,40 @@ from .pipeline import (
 )
 
 
+class CombinedOptimizer(torch.optim.Optimizer):
+    def __init__(self, optimizers):
+        self.optimizers = optimizers
+        self.param_groups = []
+        for opt in optimizers:
+            self.param_groups.extend(opt.param_groups)
+        # We don't call super().__init__ because we don't strictly follow its structure
+        # but we need to satisfy LRScheduler which accesses param_groups and state_dict.
+        # This is a minimal wrapper.
+        self.state = {} # Shared state? No, separate states.
+        # However, LRScheduler might modify param_groups[i]['lr']. 
+        # Since self.param_groups references the lists in underlying optimizers, it should work.
+
+    def step(self, closure=None):
+        loss = None
+        if closure is not None:
+             with torch.enable_grad():
+                 loss = closure()
+        for opt in self.optimizers:
+            opt.step()
+        return loss
+
+    def zero_grad(self, set_to_none: bool = False):
+        for opt in self.optimizers:
+            opt.zero_grad(set_to_none=set_to_none)
+
+    def state_dict(self):
+        return [opt.state_dict() for opt in self.optimizers]
+
+    def load_state_dict(self, state_dict):
+        for opt, state in zip(self.optimizers, state_dict):
+            opt.load_state_dict(state)
+
+
 class CurriculumTrainer:
     def __init__(
         self,
@@ -37,20 +71,68 @@ class CurriculumTrainer:
         self.wandb_run = wandb_run
         self.output_dir = repo_artifacts.output_dir
         self.repo = repo_artifacts.repo
-        self.optimizer = ADOPT(
-            model.parameters(),
-            lr=config.learning_rate,
-            weight_decay=config.weight_decay,
-        )
+        self.repo = repo_artifacts.repo
+        
+        if config.optimizer == "muon":
+            from .muon import Muon
+            # Separate parameters for Muon
+            muon_params = []
+            adamw_params = []
+            for name, p in model.named_parameters():
+                if not p.requires_grad:
+                    continue
+                # Use Muon for 2D hidden weights, AdamW for others (embeddings, norms, biases, output head)
+                if p.ndim == 2 and "embeddings" not in name and "head" not in name:
+                    muon_params.append(p)
+                else:
+                    adamw_params.append(p)
+            
+            logger.info(f"Muon params: {len(muon_params)}, AdamW params: {len(adamw_params)}")
+            
+            opt1 = Muon(
+                muon_params,
+                lr=config.learning_rate,
+                weight_decay=config.weight_decay,
+                momentum=0.95
+            )
+            opt2 = torch.optim.AdamW(
+                adamw_params,
+                lr=config.learning_rate,
+                weight_decay=config.weight_decay
+            )
+            self.optimizer = CombinedOptimizer([opt1, opt2])
+            
+        elif config.optimizer == "adamw":
+            self.optimizer = torch.optim.AdamW(
+                model.parameters(),
+                lr=config.learning_rate,
+                weight_decay=config.weight_decay,
+            )
+        else: # adopt
+            self.optimizer = ADOPT(
+                model.parameters(),
+                lr=config.learning_rate,
+                weight_decay=config.weight_decay,
+            )
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
             num_warmup_steps=0,
             num_training_steps=config.total_train_steps,
         )
-        self.scaler = torch.amp.GradScaler(
-            device_type="cuda",
-            enabled=device.type == "cuda",
-        )
+        try:
+            self.scaler = torch.amp.GradScaler(
+                device_type="cuda",
+                enabled=device.type == "cuda",
+            )
+        except TypeError:
+            # Fallback for older torch versions where torch.amp.GradScaler might not take device_type
+            # or if we should use torch.cuda.amp.GradScaler
+            if device.type == "cuda":
+                self.scaler = torch.cuda.amp.GradScaler(enabled=True)
+            else:
+                # CPU or other device where GradScaler might just be a pass-through if enabled=False
+                # If enabled=False, torch.cuda.amp.GradScaler() works fine too.
+                self.scaler = torch.cuda.amp.GradScaler(enabled=False)
 
     def train(self) -> None:
         chunk_size_dataset = max(
