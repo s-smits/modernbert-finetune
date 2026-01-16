@@ -11,7 +11,19 @@ import torch
 import torch.nn as nn
 from modernbert_finetune.trainer import CurriculumTrainer, CombinedOptimizer
 from modernbert_finetune.config import ScriptConfig, RepoArtifacts
-from modernbert_finetune.muon import Muon
+from torch.optim import Muon
+import torch.distributed as dist
+import datetime
+
+def ensure_distributed():
+    if not dist.is_initialized():
+        dist.init_process_group(
+            backend="gloo",
+            init_method="tcp://localhost:12345",
+            rank=0,
+            world_size=1,
+            timeout=datetime.timedelta(seconds=10)
+        )
 
 class SimpleModel(nn.Module):
     def __init__(self):
@@ -127,6 +139,7 @@ def test_adopt_init():
 if __name__ == "__main__":
     if not os.path.exists("tests"):
         os.makedirs("tests")
+    ensure_distributed()
     test_muon_init()
     test_adamw_init()
     test_adopt_init()

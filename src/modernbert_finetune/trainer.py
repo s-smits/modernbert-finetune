@@ -71,10 +71,9 @@ class CurriculumTrainer:
         self.wandb_run = wandb_run
         self.output_dir = repo_artifacts.output_dir
         self.repo = repo_artifacts.repo
-        self.repo = repo_artifacts.repo
         
         if config.optimizer == "muon":
-            from .muon import Muon
+            from torch.optim import Muon
             # Separate parameters for Muon
             muon_params = []
             adamw_params = []

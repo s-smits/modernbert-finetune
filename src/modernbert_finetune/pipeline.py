@@ -40,6 +40,17 @@ def resolve_device(logger: logging.Logger) -> torch.device:
     return device
 
 
+def ensure_distributed(logger: logging.Logger):
+    if not torch.distributed.is_initialized():
+        logger.info("Initializing distributed process group (backend: gloo) for Muon optimizer")
+        torch.distributed.init_process_group(
+            backend="gloo",
+            init_method="tcp://localhost:12345",
+            rank=0,
+            world_size=1,
+        )
+
+
 def resolve_flash_attention(enable: bool, logger: logging.Logger):
     if not enable:
         logger.info("FlashAttention disabled via configuration")

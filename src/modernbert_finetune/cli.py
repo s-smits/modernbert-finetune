@@ -5,6 +5,7 @@ import argparse
 from .config import EnvironmentConfig, ScriptConfig
 from .pipeline import (
     enable_flash_attention_if_available,
+    ensure_distributed,
     initialize_wandb,
     load_model,
     load_tokenizer,
@@ -68,6 +69,9 @@ def main() -> None:
 
     flash_attention_cls = resolve_flash_attention(config.flash_attention, logger)
     enable_flash_attention_if_available(model, flash_attention_cls, logger)
+
+    if config.optimizer == "muon":
+        ensure_distributed(logger)
 
     dataset = prepare_dataset(config, env, logger)
     tokenized_dataset = tokenize_dataset(dataset, tokenizer, logger)
